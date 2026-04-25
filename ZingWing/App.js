@@ -1,9 +1,13 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  DarkTheme as NavigationDarkTheme,
+  DefaultTheme as NavigationDefaultTheme,
+  NavigationContainer,
+} from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -36,14 +40,16 @@ const CommunityStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+if (Platform.OS !== 'web') {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+}
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
@@ -55,9 +61,11 @@ export default function App() {
   const [themeLoaded, setThemeLoaded] = useState(false);
 
   const paperTheme = isDarkMode ? darkTheme : lightTheme;
+  const baseNavigationTheme = isDarkMode ? NavigationDarkTheme : NavigationDefaultTheme;
   const navigationTheme = {
-    dark: isDarkMode,
+    ...baseNavigationTheme,
     colors: {
+      ...baseNavigationTheme.colors,
       primary: paperTheme.colors.primary,
       background: paperTheme.colors.background,
       card: paperTheme.colors.surface,
@@ -132,6 +140,8 @@ export default function App() {
   async function scheduleReminder(mission) {
     try {
       // This native feature schedules a local push notification for routine reminders.
+      if (Platform.OS === 'web') return;
+
       const permission = await Notifications.requestPermissionsAsync();
       if (!permission.granted) return;
 
@@ -331,5 +341,7 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    width: '100%',
+    minHeight: '100vh',
   },
 });
