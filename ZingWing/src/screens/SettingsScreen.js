@@ -8,9 +8,9 @@ export default function SettingsScreen({ navigation, isDarkMode, setIsDarkMode }
   const [remindersEnabled, setRemindersEnabled] = React.useState(true);
 
   async function handleLogout() {
-  await logoutUser();
-  navigation.replace('Welcome');
-}
+    await logoutUser();
+    navigation.getParent()?.replace('Welcome');
+  }
 
   return (
     <ScrollView style={{ backgroundColor: theme.colors.background }} contentContainerStyle={styles.container}>

@@ -1,10 +1,9 @@
-import app from "../firebase/firebaseConfig";
+import { db } from "../firebase/firebaseConfig";
 import {
   addDoc,
   collection,
   deleteDoc,
   doc,
-  getFirestore,
   increment,
   limit,
   onSnapshot,
@@ -16,8 +15,6 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-
-const db = getFirestore(app);
 
 function mapSnapshot(snapshot) {
   return snapshot.docs.map((item) => ({
@@ -39,6 +36,12 @@ export const createUserProfile = (uid, profile) => {
     ...profile,
     totalXP: profile.totalXP || 0,
     createdAt: serverTimestamp(),
+  });
+};
+
+export const saveUserOnboardingAnswers = (uid, onboardingAnswers) => {
+  return updateDoc(doc(db, "users", uid), {
+    onboardingAnswers,
   });
 };
 
