@@ -1,18 +1,36 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import * as Location from 'expo-location';
 import { Button, Card, SegmentedButtons, Text, useTheme } from 'react-native-paper';
 import LeaderboardItem from '../components/LeaderboardItem';
-import { leaderboardUsers } from '../data/mockData';
+import { getLevel, getRank } from '../data/mockData';
+import { listenLeaderboard } from '../services/database';
 
 export default function LeaderboardScreen({ currentUserCountry }) {
   const theme = useTheme();
   const [filter, setFilter] = useState('global');
   const [locationText, setLocationText] = useState('Location not checked yet.');
-  const users = leaderboardUsers
-    .filter((user) => filter === 'global' || user.country === currentUserCountry)
-    .sort((a, b) => b.xp - a.xp)
-    .slice(0, 10);
+  const [users, setUsers] = useState([]);
+
+  useEffect(() => {
+    return listenLeaderboard(
+      filter,
+      currentUserCountry,
+      setUsers,
+      (error) => console.log('Leaderboard listener failed:', error.message)
+    );
+  }, [filter, currentUserCountry]);
+
+  const rankedUsers = users.map((user) => {
+    const xp = user.totalXP || user.xp || 0;
+    const level = user.level || getLevel(xp);
+    return {
+      ...user,
+      xp,
+      level,
+      rank: user.rank || getRank(level),
+    };
+  });
 
   async function detectLocation() {
     // This native feature gets latitude and longitude. Country is still manually selected for simplicity.
@@ -50,9 +68,10 @@ export default function LeaderboardScreen({ currentUserCountry }) {
       </Card>
 
       <View>
-        {users.map((user, index) => (
+        {rankedUsers.map((user, index) => (
           <LeaderboardItem key={user.id} user={user} place={index + 1} />
         ))}
+        {rankedUsers.length === 0 ? <Text>No leaderboard users yet.</Text> : null}
       </View>
     </ScrollView>
   );

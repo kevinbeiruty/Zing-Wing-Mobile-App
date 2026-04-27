@@ -26,10 +26,9 @@ export default function AddPostScreen({ navigation, addPost, userStats }) {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     const post = {
-      id: Date.now().toString(),
-      userName: 'You',
+      userName: userStats.name || 'You',
       country: userStats.country,
       level: userStats.level,
       rank: userStats.rank,
@@ -38,9 +37,7 @@ export default function AddPostScreen({ navigation, addPost, userStats }) {
       visibility,
     };
 
-    // Later this function will upload the image to Firebase Storage
-    // and save the post document in Firestore.
-    addPost(post);
+    await addPost(post);
     navigation.goBack();
   }
 

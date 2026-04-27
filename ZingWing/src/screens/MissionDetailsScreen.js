@@ -33,8 +33,8 @@ export default function MissionDetailsScreen({
     );
   }
 
-  function handleSave() {
-    updateMission(mission.id, {
+  async function handleSave() {
+    await updateMission(mission.id, {
       title,
       difficulty,
       xp: getXPByDifficulty(difficulty),
@@ -42,8 +42,8 @@ export default function MissionDetailsScreen({
     setIsEditing(false);
   }
 
-  function handleDelete() {
-    deleteMission(mission.id);
+  async function handleDelete() {
+    await deleteMission(mission.id);
     navigation.goBack();
   }
 

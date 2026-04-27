@@ -7,7 +7,7 @@ export default function PostCard({ post }) {
     <Card mode="outlined" style={styles.card}>
       <Card.Content style={styles.content}>
         <View style={styles.row}>
-          <Avatar.Text size={42} label={post.userName.charAt(0)} />
+          <Avatar.Text size={42} label={(post.userName || 'U').charAt(0)} />
           <View style={styles.userInfo}>
             <Text variant="titleMedium">{post.userName}</Text>
             <Text variant="bodySmall">{post.country} - Level {post.level} - {post.rank}</Text>

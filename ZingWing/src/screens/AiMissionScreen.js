@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text, TextInput, useTheme } from 'react-native-paper';
 import MissionCard from '../components/MissionCard';
-import { categories, difficulties, generatedMissions } from '../data/mockData';
+import { categories, difficulties, getXPByDifficulty } from '../data/mockData';
 
 export default function AiMissionScreen({ onboardingAnswers }) {
   const theme = useTheme();
@@ -16,7 +16,26 @@ export default function AiMissionScreen({ onboardingAnswers }) {
     // Later: send onboarding answers to Firebase Generative AI.
     // The AI should return JSON missions only.
     // Then this screen will render the JSON using MissionCard components.
-    setMissions(generatedMissions);
+    setMissions([
+      {
+        title: `${difficulty} ${category} Sprint`,
+        category,
+        difficulty,
+        xp: getXPByDifficulty(difficulty),
+        reason: goal || weakness
+          ? `Built around your goal: ${goal || 'steady progress'}.`
+          : 'Good for starting when motivation is low.',
+      },
+      {
+        title: `Small ${category} Win`,
+        category,
+        difficulty: 'Easy',
+        xp: getXPByDifficulty('Easy'),
+        reason: weakness
+          ? `A low-pressure step against: ${weakness}.`
+          : 'Builds consistency without pressure.',
+      },
+    ]);
   }
 
   return (

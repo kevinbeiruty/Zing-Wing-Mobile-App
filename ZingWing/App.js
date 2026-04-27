@@ -15,6 +15,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider as PaperProvider } from 'react-native-paper';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 import AddMissionScreen from './src/screens/AddMissionScreen';
 import AddPostScreen from './src/screens/AddPostScreen';
@@ -30,7 +31,18 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
-import { currentUser, getLevel, getRank, starterMissions, starterPosts } from './src/data/mockData';
+import { getLevel, getRank } from './src/data/mockData';
+import app from './src/firebase/firebaseConfig';
+import {
+  addMissionForUser,
+  addPostForUser,
+  completeMissionForUser,
+  deleteMissionForUser,
+  listenPostsForUser,
+  listenUserMissions,
+  listenUserProfile,
+  updateMissionForUser,
+} from './src/services/database';
 import { darkTheme, lightTheme } from './src/theme/themes';
 
 const RootStack = createNativeStackNavigator();
@@ -39,6 +51,14 @@ const MissionsStack = createNativeStackNavigator();
 const CommunityStack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 const Drawer = createDrawerNavigator();
+
+const defaultUserProfile = {
+  id: null,
+  name: 'You',
+  email: '',
+  country: 'Lebanon',
+  totalXP: 0,
+};
 
 if (Platform.OS !== 'web') {
   Notifications.setNotificationHandler({
@@ -53,10 +73,10 @@ if (Platform.OS !== 'web') {
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(true);
-  const [missions, setMissions] = useState(starterMissions);
-  const [posts, setPosts] = useState(starterPosts);
-  const [totalXP, setTotalXP] = useState(currentUser.totalXP);
-  const [userProfile, setUserProfile] = useState(currentUser);
+  const [firebaseUser, setFirebaseUser] = useState(null);
+  const [missions, setMissions] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [userProfile, setUserProfile] = useState(defaultUserProfile);
   const [onboardingAnswers, setOnboardingAnswers] = useState({});
   const [themeLoaded, setThemeLoaded] = useState(false);
 
@@ -75,6 +95,7 @@ export default function App() {
     },
   };
 
+  const totalXP = userProfile.totalXP || 0;
   const level = getLevel(totalXP);
   const rank = getRank(level);
   const userStats = {
@@ -83,9 +104,14 @@ export default function App() {
     level,
     rank,
     completedMissions: missions.filter((mission) => mission.completed).length,
-    publicPosts: posts.filter((post) => post.userName === 'You' && post.visibility === 'public').length,
-    privatePosts: posts.filter((post) => post.userName === 'You' && post.visibility === 'private').length,
+    publicPosts: posts.filter((post) => post.userId === firebaseUser?.uid && post.visibility === 'public').length,
+    privatePosts: posts.filter((post) => post.userId === firebaseUser?.uid && post.visibility === 'private').length,
   };
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    return onAuthStateChanged(auth, setFirebaseUser);
+  }, []);
 
   useEffect(() => {
     async function loadThemePreference() {
@@ -106,35 +132,84 @@ export default function App() {
     }
   }, [isDarkMode, themeLoaded]);
 
-  function addMission(mission) {
-    setMissions((oldMissions) => [mission, ...oldMissions]);
+  useEffect(() => {
+    if (!firebaseUser) {
+      setUserProfile(defaultUserProfile);
+      setOnboardingAnswers({});
+      return undefined;
+    }
+
+    return listenUserProfile(
+      firebaseUser.uid,
+      (profile) => {
+        const nextProfile = profile || {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'You',
+          email: firebaseUser.email || '',
+          country: 'Lebanon',
+          totalXP: 0,
+        };
+
+        setUserProfile(nextProfile);
+        setOnboardingAnswers(nextProfile.onboardingAnswers || {});
+      },
+      (error) => console.log('User profile listener failed:', error.message)
+    );
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    if (!firebaseUser) {
+      setMissions([]);
+      return undefined;
+    }
+
+    return listenUserMissions(
+      firebaseUser.uid,
+      setMissions,
+      (error) => console.log('Mission listener failed:', error.message)
+    );
+  }, [firebaseUser]);
+
+  useEffect(() => {
+    if (!firebaseUser) {
+      setPosts([]);
+      return undefined;
+    }
+
+    return listenPostsForUser(
+      firebaseUser.uid,
+      setPosts,
+      (error) => console.log('Post listener failed:', error.message)
+    );
+  }, [firebaseUser]);
+
+  async function addMission(mission) {
+    if (!firebaseUser) return;
+    await addMissionForUser(firebaseUser.uid, mission);
   }
 
-  function updateMission(id, updates) {
-    // Later this function will use Firebase Firestore updateDoc().
-    setMissions((oldMissions) => oldMissions.map((mission) => (
-      mission.id === id ? { ...mission, ...updates } : mission
-    )));
+  async function updateMission(id, updates) {
+    if (!firebaseUser) return;
+    await updateMissionForUser(firebaseUser.uid, id, updates);
   }
 
-  function deleteMission(id) {
-    // Later this function will use Firebase Firestore deleteDoc().
-    setMissions((oldMissions) => oldMissions.filter((mission) => mission.id !== id));
+  async function deleteMission(id) {
+    if (!firebaseUser) return;
+    await deleteMissionForUser(firebaseUser.uid, id);
   }
 
-  function completeMission(id) {
+  async function completeMission(id) {
+    if (!firebaseUser) return;
+
     const mission = missions.find((item) => item.id === id);
     if (!mission || mission.completed) return;
 
-    // This button updates mission.completed and adds XP to the user.
-    setMissions((oldMissions) => oldMissions.map((item) => (
-      item.id === id ? { ...item, completed: true } : item
-    )));
-    setTotalXP((oldXP) => oldXP + mission.xp);
+    await completeMissionForUser(firebaseUser.uid, mission);
   }
 
-  function addPost(post) {
-    setPosts((oldPosts) => [post, ...oldPosts]);
+  async function addPost(post) {
+    if (!firebaseUser) return;
+    await addPostForUser(firebaseUser.uid, post);
   }
 
   async function scheduleReminder(mission) {
@@ -238,7 +313,7 @@ export default function App() {
     return (
       <CommunityStack.Navigator screenOptions={dashboardStackScreenOptions}>
         <CommunityStack.Screen name="Community" options={{ title: 'Community' }}>
-          {(props) => <CommunityScreen {...props} posts={posts} />}
+          {(props) => <CommunityScreen {...props} posts={posts} currentUserId={firebaseUser?.uid} />}
         </CommunityStack.Screen>
         <CommunityStack.Screen name="AddPost" options={{ title: 'Add Post' }}>
           {(props) => <AddPostScreen {...props} addPost={addPost} userStats={userStats} />}
