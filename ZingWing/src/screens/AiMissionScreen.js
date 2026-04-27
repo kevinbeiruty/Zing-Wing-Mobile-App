@@ -2,40 +2,45 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text, TextInput, useTheme } from 'react-native-paper';
 import MissionCard from '../components/MissionCard';
-import { categories, difficulties, getXPByDifficulty } from '../data/mockData';
+import { categories, difficulties } from '../data/mockData';
+import { generateAIMissions } from '../services/aiMissions';
 
-export default function AiMissionScreen({ onboardingAnswers }) {
+export default function AiMissionScreen({ onboardingAnswers, addMission, scheduleReminder }) {
   const theme = useTheme();
   const [goal, setGoal] = useState(onboardingAnswers.goal || '');
   const [weakness, setWeakness] = useState(onboardingAnswers.weakness || '');
   const [category, setCategory] = useState(onboardingAnswers.selectedCategories?.[0] || 'Productivity');
   const [difficulty, setDifficulty] = useState(onboardingAnswers.difficulty || 'Easy');
   const [missions, setMissions] = useState([]);
+  const [savedMissionTitles, setSavedMissionTitles] = useState([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  function generateMissions() {
-    // Later: send onboarding answers to Firebase Generative AI.
-    // The AI should return JSON missions only.
-    // Then this screen will render the JSON using MissionCard components.
-    setMissions([
-      {
-        title: `${difficulty} ${category} Sprint`,
+  async function generateMissions() {
+    try {
+      setIsGenerating(true);
+      setErrorMessage('');
+      setSavedMissionTitles([]);
+      const nextMissions = await generateAIMissions({
+        goal,
+        weakness,
         category,
         difficulty,
-        xp: getXPByDifficulty(difficulty),
-        reason: goal || weakness
-          ? `Built around your goal: ${goal || 'steady progress'}.`
-          : 'Good for starting when motivation is low.',
-      },
-      {
-        title: `Small ${category} Win`,
-        category,
-        difficulty: 'Easy',
-        xp: getXPByDifficulty('Easy'),
-        reason: weakness
-          ? `A low-pressure step against: ${weakness}.`
-          : 'Builds consistency without pressure.',
-      },
-    ]);
+        onboardingAnswers,
+      });
+      setMissions(nextMissions);
+    } catch (error) {
+      console.log('AI mission generation failed:', error.message);
+      setErrorMessage(`Could not generate missions: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  }
+
+  async function saveMission(mission) {
+    await addMission(mission);
+    scheduleReminder(mission);
+    setSavedMissionTitles((oldTitles) => [...oldTitles, mission.title]);
   }
 
   return (
@@ -64,16 +69,24 @@ export default function AiMissionScreen({ onboardingAnswers }) {
             ))}
           </View>
 
-          <Button mode="contained" onPress={generateMissions}>
+          <Button mode="contained" onPress={generateMissions} loading={isGenerating} disabled={isGenerating}>
             Generate Missions
           </Button>
+          {errorMessage ? <Text style={{ color: theme.colors.error }}>{errorMessage}</Text> : null}
         </Card.Content>
       </Card>
 
       {missions.map((mission, index) => (
         <View key={`${mission.title}-${index}`} style={styles.generated}>
-          <MissionCard mission={{ ...mission, id: String(index), completed: false, description: mission.reason }} showActions={false} />
+          <MissionCard mission={{ ...mission, id: String(index), completed: false }} showActions={false} />
           <Text>{mission.reason}</Text>
+          <Button
+            mode="contained-tonal"
+            onPress={() => saveMission(mission)}
+            disabled={savedMissionTitles.includes(mission.title)}
+          >
+            {savedMissionTitles.includes(mission.title) ? 'Saved' : 'Save Mission'}
+          </Button>
         </View>
       ))}
     </ScrollView>

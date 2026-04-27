@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getAI, GoogleAIBackend } from "firebase/ai";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -14,6 +15,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
+export const ai = getAI(app, { backend: new GoogleAIBackend() });
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);

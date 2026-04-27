@@ -375,7 +375,14 @@ export default function App() {
           )}
         </Drawer.Screen>
         <Drawer.Screen name="AI Mission Generator" options={{ title: 'AI Mission Generator' }}>
-          {(props) => <AiMissionScreen {...props} onboardingAnswers={onboardingAnswers} />}
+          {(props) => (
+            <AiMissionScreen
+              {...props}
+              onboardingAnswers={onboardingAnswers}
+              addMission={addMission}
+              scheduleReminder={scheduleReminder}
+            />
+          )}
         </Drawer.Screen>
       </Drawer.Navigator>
     );
