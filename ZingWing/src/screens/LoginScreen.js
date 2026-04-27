@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, TextInput, useTheme } from 'react-native-paper';
+import { loginUser } from "../services/auth";
 
 export default function LoginScreen({ navigation }) {
   const theme = useTheme();

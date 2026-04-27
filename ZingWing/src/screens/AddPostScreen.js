@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Card, Chip, Text, TextInput, useTheme } from 'react-native-paper';
+import { addItem } from "../services/database";
 
 export default function AddPostScreen({ navigation, addPost, userStats }) {
   const theme = useTheme();
