@@ -54,6 +54,6 @@ coverage/
 /ios
 /android
 
-#firebase
+# Firebase
 firebase-debug.log
-firebaseConfig.js
+src/firebase/firebaseConfig.js
