@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text, TextInput, useTheme } from 'react-native-paper';
 import { difficulties, getXPByDifficulty } from '../data/mockData';
+import { updateItem } from "../services/database";
 
 export default function MissionDetailsScreen({
   route,
@@ -32,8 +33,8 @@ export default function MissionDetailsScreen({
     );
   }
 
-  function handleSave() {
-    updateMission(mission.id, {
+  async function handleSave() {
+    await updateMission(mission.id, {
       title,
       difficulty,
       xp: getXPByDifficulty(difficulty),
@@ -41,8 +42,8 @@ export default function MissionDetailsScreen({
     setIsEditing(false);
   }
 
-  function handleDelete() {
-    deleteMission(mission.id);
+  async function handleDelete() {
+    await deleteMission(mission.id);
     navigation.goBack();
   }
 

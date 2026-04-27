@@ -20,9 +20,8 @@ export default function AddMissionScreen({ navigation, addMission, scheduleRemin
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     const mission = {
-      id: Date.now().toString(),
       title,
       description,
       category,
@@ -33,9 +32,7 @@ export default function AddMissionScreen({ navigation, addMission, scheduleRemin
       reminderTime,
     };
 
-    // This screen demonstrates CREATE operation for missions.
-    // Later this function will use Firebase Firestore addDoc() instead of local state.
-    addMission(mission);
+    await addMission(mission);
     scheduleReminder(mission);
     navigation.goBack();
   }

@@ -1,16 +1,21 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, TextInput, useTheme } from 'react-native-paper';
+import { loginUser } from "../services/auth";
 
 export default function LoginScreen({ navigation }) {
   const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  function handleLogin() {
-    // Later this function will use Firebase Authentication signInWithEmailAndPassword().
+  async function handleLogin() {
+  try {
+    await loginUser(email, password);
     navigation.replace('MainDrawer');
+  } catch (error) {
+    console.log(error.message);
   }
+}
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

@@ -3,12 +3,12 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons, Text, useTheme } from 'react-native-paper';
 import PostCard from '../components/PostCard';
 
-export default function CommunityScreen({ navigation, posts }) {
+export default function CommunityScreen({ navigation, posts, currentUserId }) {
   const theme = useTheme();
   const [feedMode, setFeedMode] = useState('public');
   const visiblePosts = posts.filter((post) => {
     if (feedMode === 'public') return post.visibility === 'public';
-    return post.userName === 'You' && post.visibility === 'private';
+    return post.userId === currentUserId && post.visibility === 'private';
   });
 
   return (

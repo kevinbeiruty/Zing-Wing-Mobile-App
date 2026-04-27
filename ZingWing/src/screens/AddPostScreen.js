@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Image, ScrollView, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Card, Chip, Text, TextInput, useTheme } from 'react-native-paper';
+import { addItem } from "../services/database";
 
 export default function AddPostScreen({ navigation, addPost, userStats }) {
   const theme = useTheme();
@@ -25,10 +26,9 @@ export default function AddPostScreen({ navigation, addPost, userStats }) {
     }
   }
 
-  function handleSave() {
+  async function handleSave() {
     const post = {
-      id: Date.now().toString(),
-      userName: 'You',
+      userName: userStats.name || 'You',
       country: userStats.country,
       level: userStats.level,
       rank: userStats.rank,
@@ -37,9 +37,7 @@ export default function AddPostScreen({ navigation, addPost, userStats }) {
       visibility,
     };
 
-    // Later this function will upload the image to Firebase Storage
-    // and save the post document in Firestore.
-    addPost(post);
+    await addPost(post);
     navigation.goBack();
   }
 

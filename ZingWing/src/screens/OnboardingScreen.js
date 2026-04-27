@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Button, Card, Chip, Text, TextInput, useTheme } from 'react-native-paper';
 import { categories } from '../data/mockData';
+import { auth } from '../firebase/firebaseConfig';
+import { saveUserOnboardingAnswers } from '../services/database';
 
 export default function OnboardingScreen({ navigation, saveOnboardingAnswers }) {
   const theme = useTheme();
@@ -19,9 +21,12 @@ export default function OnboardingScreen({ navigation, saveOnboardingAnswers }) 
     }
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     const answers = { goal, weakness, selectedCategories, difficulty, reminderPreference };
-    // Later this data will be saved to Firebase and sent to Firebase Generative AI.
+    if (auth.currentUser) {
+      await saveUserOnboardingAnswers(auth.currentUser.uid, answers);
+    }
+
     saveOnboardingAnswers(answers);
     navigation.replace('MainDrawer');
   }

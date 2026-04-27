@@ -1,13 +1,14 @@
 import React from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 import { Button, Card, List, Switch, Text, useTheme } from 'react-native-paper';
+import { logoutUser } from "../services/auth";
 
 export default function SettingsScreen({ navigation, isDarkMode, setIsDarkMode }) {
   const theme = useTheme();
   const [remindersEnabled, setRemindersEnabled] = React.useState(true);
 
-  function handleLogout() {
-    // Later this button will call Firebase Authentication signOut().
+  async function handleLogout() {
+    await logoutUser();
     navigation.getParent()?.replace('Welcome');
   }
 

@@ -5,6 +5,7 @@ import MissionCard from '../components/MissionCard';
 import RankBadge from '../components/RankBadge';
 import XPBar from '../components/XPBar';
 import { getLevel, getRank } from '../data/mockData';
+import { getItems, deleteItem } from "../services/database";
 
 export default function DashboardScreen({ navigation, missions, totalXP, completeMission }) {
   const theme = useTheme();
