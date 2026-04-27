@@ -8,10 +8,14 @@ export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  function handleLogin() {
-    // Later this function will use Firebase Authentication signInWithEmailAndPassword().
+  async function handleLogin() {
+  try {
+    await loginUser(email, password);
     navigation.replace('MainDrawer');
+  } catch (error) {
+    console.log(error.message);
   }
+}
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
