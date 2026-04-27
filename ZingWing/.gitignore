@@ -53,3 +53,7 @@ coverage/
 # generated native folders
 /ios
 /android
+
+#firebase
+firebase-debug.log
+firebaseConfig.js

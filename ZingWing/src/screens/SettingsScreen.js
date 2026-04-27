@@ -7,10 +7,10 @@ export default function SettingsScreen({ navigation, isDarkMode, setIsDarkMode }
   const theme = useTheme();
   const [remindersEnabled, setRemindersEnabled] = React.useState(true);
 
-  function handleLogout() {
-    // Later this button will call Firebase Authentication signOut().
-    navigation.getParent()?.replace('Welcome');
-  }
+  async function handleLogout() {
+  await logoutUser();
+  navigation.replace('Welcome');
+}
 
   return (
     <ScrollView style={{ backgroundColor: theme.colors.background }} contentContainerStyle={styles.container}>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 import { registerUser } from "../services/auth";
+import { createUserProfile } from "../services/database";
 
 export default function RegisterScreen({ navigation, saveRegisteredUser }) {
   const theme = useTheme();
@@ -10,27 +11,45 @@ export default function RegisterScreen({ navigation, saveRegisteredUser }) {
   const [password, setPassword] = useState('');
   const [country, setCountry] = useState('Lebanon');
 
-  function handleRegister() {
-    // Later this function will use Firebase Authentication createUserWithEmailAndPassword().
-    // The user profile will be saved in the users collection with name, email, and country.
-    saveRegisteredUser({
-      name: name || 'You',
-      email,
-      country: country || 'Lebanon',
-    });
-    navigation.navigate('Onboarding', { name, email, country });
+  async function handleRegister() {
+    try {
+      //Register user in Firebase Auth
+      const credential = await registerUser(email, password);
+      const uid = credential.user.uid;
+
+      //Create user profile in Firestore
+      const profile = {
+        name: name || 'You',
+        email,
+        country: country || 'Lebanon',
+      };
+
+      await createUserProfile(uid, profile);
+
+      //Save locally 
+      saveRegisteredUser(profile);
+
+      //Navigate to onboarding
+      navigation.navigate('Onboarding', profile);
+
+    } catch (error) {
+      console.log(error.message);
+    }
   }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Text variant="headlineMedium" style={styles.title}>Create Hunter Profile</Text>
+
       <TextInput label="Name" value={name} onChangeText={setName} />
       <TextInput label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
       <TextInput label="Password" value={password} onChangeText={setPassword} secureTextEntry />
       <TextInput label="Country" value={country} onChangeText={setCountry} />
+
       <Button mode="contained" onPress={handleRegister}>
         Continue
       </Button>
+
       <Button onPress={() => navigation.navigate('Login')}>
         Already have an account?
       </Button>
