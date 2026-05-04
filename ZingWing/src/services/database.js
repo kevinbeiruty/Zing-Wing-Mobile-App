@@ -134,16 +134,20 @@ export const listenPostsForUser = (uid, onData, onError) => {
 export const listenLeaderboard = (filter, currentUserCountry, onData, onError) => {
   const usersRef = collection(db, "users");
   const leaderboardQuery = filter === "country"
-    ? query(usersRef, where("country", "==", currentUserCountry), orderBy("totalXP", "desc"), limit(10))
+    ? query(usersRef, where("country", "==", currentUserCountry || ""))
     : query(usersRef, orderBy("totalXP", "desc"), limit(10));
 
   return onSnapshot(
     leaderboardQuery,
     (snapshot) => {
-      onData(mapSnapshot(snapshot).map((user) => ({
-        ...user,
-        xp: user.totalXP || 0,
-      })));
+      const users = mapSnapshot(snapshot)
+        .map((user) => ({
+          ...user,
+          xp: user.totalXP || 0,
+        }))
+        .sort((a, b) => (b.totalXP || 0) - (a.totalXP || 0));
+
+      onData(filter === "country" ? users.slice(0, 10) : users);
     },
     onError
   );
