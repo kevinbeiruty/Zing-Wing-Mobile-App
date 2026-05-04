@@ -97,6 +97,21 @@ export const addPostForUser = (uid, post) => {
   });
 };
 
+export const deletePostForUser = (uid, postId) => {
+  const postRef = doc(db, "posts", postId);
+
+  return runTransaction(db, async (transaction) => {
+    const postSnapshot = await transaction.get(postRef);
+    if (!postSnapshot.exists()) return;
+
+    if (postSnapshot.data().userId !== uid) {
+      throw new Error("You can only delete your own posts.");
+    }
+
+    transaction.delete(postRef);
+  });
+};
+
 export const listenPostsForUser = (uid, onData, onError) => {
   let publicPosts = [];
   let userPosts = [];
