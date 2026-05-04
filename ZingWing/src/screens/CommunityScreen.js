@@ -1,15 +1,40 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Button, SegmentedButtons, Text, useTheme } from 'react-native-paper';
 import PostCard from '../components/PostCard';
 
-export default function CommunityScreen({ navigation, posts, currentUserId }) {
+export default function CommunityScreen({ navigation, posts, currentUserId, deletePost }) {
   const theme = useTheme();
   const [feedMode, setFeedMode] = useState('public');
+  const [deletingPostId, setDeletingPostId] = useState(null);
   const visiblePosts = posts.filter((post) => {
     if (feedMode === 'public') return post.visibility === 'public';
     return post.userId === currentUserId && post.visibility === 'private';
   });
+
+  function handleDeletePost(postId) {
+    Alert.alert(
+      'Delete post?',
+      'This post will be permanently removed.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setDeletingPostId(postId);
+              await deletePost(postId);
+            } catch (error) {
+              Alert.alert('Could not delete post', error.message);
+            } finally {
+              setDeletingPostId(null);
+            }
+          },
+        },
+      ]
+    );
+  }
 
   return (
     <ScrollView style={{ backgroundColor: theme.colors.background }} contentContainerStyle={styles.container}>
@@ -32,7 +57,15 @@ export default function CommunityScreen({ navigation, posts, currentUserId }) {
         ]}
       />
 
-      {visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}
+      {visiblePosts.map((post) => (
+        <PostCard
+          key={post.id}
+          post={post}
+          canDelete={Boolean(currentUserId) && post.userId === currentUserId}
+          isDeleting={deletingPostId === post.id}
+          onDelete={() => handleDeletePost(post.id)}
+        />
+      ))}
       {visiblePosts.length === 0 ? <Text>No posts here yet.</Text> : null}
     </ScrollView>
   );

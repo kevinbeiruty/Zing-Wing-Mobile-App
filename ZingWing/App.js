@@ -37,6 +37,7 @@ import {
   addPostForUser,
   completeMissionForUser,
   deleteMissionForUser,
+  deletePostForUser,
   listenPostsForUser,
   listenUserMissions,
   listenUserProfile,
@@ -211,6 +212,11 @@ export default function App() {
     await addPostForUser(firebaseUser.uid, post);
   }
 
+  async function deletePost(id) {
+    if (!firebaseUser) return;
+    await deletePostForUser(firebaseUser.uid, id);
+  }
+
   async function scheduleReminder(mission) {
     try {
       // This native feature schedules a local push notification for routine reminders.
@@ -312,7 +318,14 @@ export default function App() {
     return (
       <CommunityStack.Navigator screenOptions={dashboardStackScreenOptions}>
         <CommunityStack.Screen name="Community" options={{ title: 'Community' }}>
-          {(props) => <CommunityScreen {...props} posts={posts} currentUserId={firebaseUser?.uid} />}
+          {(props) => (
+            <CommunityScreen
+              {...props}
+              posts={posts}
+              currentUserId={firebaseUser?.uid}
+              deletePost={deletePost}
+            />
+          )}
         </CommunityStack.Screen>
         <CommunityStack.Screen name="AddPost" options={{ title: 'Add Post' }}>
           {(props) => <AddPostScreen {...props} addPost={addPost} userStats={userStats} />}
