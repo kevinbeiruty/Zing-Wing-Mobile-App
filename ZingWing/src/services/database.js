@@ -1,4 +1,4 @@
-import { db } from "../firebase/firebaseConfig";
+import { db, storage } from "../firebase/firebaseConfig";
 import {
   addDoc,
   collection,
@@ -15,6 +15,7 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
+import { deleteObject, getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 function mapSnapshot(snapshot) {
   return snapshot.docs.map((item) => ({
@@ -29,6 +30,33 @@ function sortByCreatedAtDesc(items) {
     const bTime = b.createdAt?.toMillis?.() || 0;
     return bTime - aTime;
   });
+}
+
+function getImageExtension(image) {
+  const fileNameExtension = image?.fileName?.split(".").pop();
+  const uriExtension = image?.uri?.split("?")[0].split(".").pop();
+  const extension = fileNameExtension || uriExtension || "jpg";
+
+  return extension.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "jpg";
+}
+
+async function uploadPostImage(uid, image) {
+  if (!image?.uri) return null;
+
+  const response = await fetch(image.uri);
+  const blob = await response.blob();
+  const extension = getImageExtension(image);
+  const imagePath = `posts/${uid}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+  const imageRef = ref(storage, imagePath);
+
+  await uploadBytes(imageRef, blob, {
+    contentType: image.mimeType || blob.type || "image/jpeg",
+  });
+
+  return {
+    imagePath,
+    imageUri: await getDownloadURL(imageRef),
+  };
 }
 
 export const createUserProfile = (uid, profile) => {
@@ -89,9 +117,13 @@ export const completeMissionForUser = (uid, mission) => {
   });
 };
 
-export const addPostForUser = (uid, post) => {
+export const addPostForUser = async (uid, post) => {
+  const { image, ...postFields } = post;
+  const uploadedImage = await uploadPostImage(uid, image);
+
   return addDoc(collection(db, "posts"), {
-    ...post,
+    ...postFields,
+    ...(uploadedImage || {}),
     userId: uid,
     createdAt: serverTimestamp(),
   });
@@ -104,11 +136,22 @@ export const deletePostForUser = (uid, postId) => {
     const postSnapshot = await transaction.get(postRef);
     if (!postSnapshot.exists()) return;
 
-    if (postSnapshot.data().userId !== uid) {
+    const post = postSnapshot.data();
+
+    if (post.userId !== uid) {
       throw new Error("You can only delete your own posts.");
     }
 
     transaction.delete(postRef);
+    return post.imagePath;
+  }).then(async (imagePath) => {
+    if (!imagePath) return;
+
+    try {
+      await deleteObject(ref(storage, imagePath));
+    } catch (error) {
+      console.log("Post image deletion skipped:", error.message);
+    }
   });
 };
 
