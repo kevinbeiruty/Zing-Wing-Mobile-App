@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
-import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Image, ScrollView, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Button, Card, Chip, Text, TextInput, useTheme } from 'react-native-paper';
-import { addItem } from "../services/database";
 
 export default function AddPostScreen({ navigation, addPost, userStats }) {
   const theme = useTheme();
-  const [imageUri, setImageUri] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
   const [caption, setCaption] = useState('');
   const [visibility, setVisibility] = useState('public');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const imageUri = selectedImage?.uri || '';
 
   async function pickImage() {
     // This is one of our native features: image picker for progress photos.
@@ -22,23 +24,31 @@ export default function AddPostScreen({ navigation, addPost, userStats }) {
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      setSelectedImage(result.assets[0]);
     }
   }
 
   async function handleSave() {
+    setIsSaving(true);
+
     const post = {
       userName: userStats.name || 'You',
       country: userStats.country,
       level: userStats.level,
       rank: userStats.rank,
-      imageUri,
+      image: selectedImage,
       caption,
       visibility,
     };
 
-    await addPost(post);
-    navigation.goBack();
+    try {
+      await addPost(post);
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Could not save post', error.message);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -47,7 +57,7 @@ export default function AddPostScreen({ navigation, addPost, userStats }) {
       <Card mode="outlined" style={styles.card}>
         <Card.Content style={styles.content}>
           {imageUri ? <Image source={{ uri: imageUri }} style={styles.image} /> : null}
-          <Button mode="outlined" onPress={pickImage}>
+          <Button mode="outlined" onPress={pickImage} disabled={isSaving}>
             Choose Progress Photo
           </Button>
           <TextInput label="Caption" value={caption} onChangeText={setCaption} multiline />
@@ -59,8 +69,8 @@ export default function AddPostScreen({ navigation, addPost, userStats }) {
               </Chip>
             ))}
           </View>
-          <Button mode="contained" onPress={handleSave} disabled={!caption}>
-            Save Post
+          <Button mode="contained" onPress={handleSave} disabled={!caption || isSaving} loading={isSaving}>
+            {isSaving ? 'Uploading...' : 'Save Post'}
           </Button>
         </Card.Content>
       </Card>
